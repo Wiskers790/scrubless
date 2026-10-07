@@ -24,12 +24,23 @@ curl -fsSL "https://github.com/ggml-org/llama.cpp/releases/download/$LLAMA/$LLAM
 dir="$(dirname "$(find "$TMP" -name llama-server -type f | head -1)")"
 cp -a "$dir"/llama-server "$dir"/*.so* "$dir"/*.dylib "$OUT/llama/" 2>/dev/null || true
 cp -a "$dir"/*.metal "$OUT/llama/" 2>/dev/null || true
+rm -f "$OUT"/llama/libllama-{batched-bench,bench,cli,completion,fit-params,perplexity,quantize}-impl.* "$OUT"/llama/libggml-rpc.*
 
 echo "== whisper.cpp $WHISPER (built from source)"
+PREFIX="$TMP/prefix"
+if [ "$PLATFORM" = linux-x64 ]; then
+  # ggml's Vulkan backend needs SPIRV-Headers and Vulkan-Headers as CMake packages; distro and
+  # CI images rarely ship them, so build them into a private prefix
+  for repo in SPIRV-Headers Vulkan-Headers; do
+    git clone -q --depth 1 "https://github.com/KhronosGroup/$repo.git" "$TMP/$repo"
+    cmake -S "$TMP/$repo" -B "$TMP/$repo/build" -DCMAKE_INSTALL_PREFIX="$PREFIX" -DSPIRV_HEADERS_ENABLE_TESTS=OFF > /dev/null
+    cmake --install "$TMP/$repo/build" > /dev/null
+  done
+fi
 git clone -q --depth 1 --branch "$WHISPER" https://github.com/ggml-org/whisper.cpp.git "$TMP/whisper"
 # shellcheck disable=SC2086
 cmake -S "$TMP/whisper" -B "$TMP/whisper/build" -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF \
-      -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF $WHISPER_GPU > /dev/null
+      -DCMAKE_PREFIX_PATH="$PREFIX" -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF $WHISPER_GPU > /dev/null
 cmake --build "$TMP/whisper/build" -j"$(getconf _NPROCESSORS_ONLN)" --target whisper-server > /dev/null
 cp "$TMP/whisper/build/bin/whisper-server" "$OUT/whisper/"
 

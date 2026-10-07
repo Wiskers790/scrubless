@@ -1,10 +1,11 @@
 # Windows counterpart of fetch-engines.sh: assembles src-tauri\engines\{llama,whisper,ffmpeg}.
-# Requires the Vulkan SDK (VULKAN_SDK env) and Visual Studio build tools for whisper.cpp.
+# Needs the Vulkan SDK (VULKAN_SDK, for glslc) and Visual Studio build tools for whisper.cpp.
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $true   # a failing git/cmake stops the script
 $Llama = "b11461"; $Whisper = "v1.9.5"
 $Root = Split-Path -Parent $PSScriptRoot
 $Out = Join-Path $Root "src-tauri\engines"
-$Tmp = Join-Path $env:RUNNER_TEMP "engines"
+$Tmp = Join-Path ($env:RUNNER_TEMP ?? $env:TEMP) "engines"
 Remove-Item -Recurse -Force $Out, $Tmp -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force "$Out\llama", "$Out\whisper", "$Out\ffmpeg", $Tmp | Out-Null
 
@@ -15,10 +16,19 @@ $dir = (Get-ChildItem -Recurse "$Tmp\llama" -Filter llama-server.exe | Select-Ob
 Copy-Item "$dir\llama-server.exe", "$dir\*.dll" "$Out\llama\"
 
 Write-Host "== whisper.cpp $Whisper (Vulkan, built from source)"
+$Prefix = "$Tmp\prefix"
+foreach ($repo in "SPIRV-Headers", "Vulkan-Headers") {
+  git clone -q --depth 1 "https://github.com/KhronosGroup/$repo.git" "$Tmp\$repo"
+  cmake -S "$Tmp\$repo" -B "$Tmp\$repo\build" -DCMAKE_INSTALL_PREFIX="$Prefix" -DSPIRV_HEADERS_ENABLE_TESTS=OFF | Out-Null
+  cmake --install "$Tmp\$repo\build" | Out-Null
+}
 git clone -q --depth 1 --branch $Whisper https://github.com/ggml-org/whisper.cpp.git "$Tmp\whisper"
-cmake -S "$Tmp\whisper" -B "$Tmp\whisper\build" -DGGML_VULKAN=ON -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DWHISPER_BUILD_TESTS=OFF
+cmake -S "$Tmp\whisper" -B "$Tmp\whisper\build" -DGGML_VULKAN=ON -DCMAKE_PREFIX_PATH="$Prefix" `
+      -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DWHISPER_BUILD_TESTS=OFF
 cmake --build "$Tmp\whisper\build" --config Release --target whisper-server -j 4
-Copy-Item (Get-ChildItem -Recurse "$Tmp\whisper\build" -Filter whisper-server.exe | Select-Object -First 1).FullName "$Out\whisper\"
+$ws = Get-ChildItem -Recurse "$Tmp\whisper\build" -Filter whisper-server.exe | Select-Object -First 1
+if (-not $ws) { throw "whisper-server.exe was not built" }
+Copy-Item $ws.FullName "$Out\whisper\"
 
 Write-Host "== ffmpeg (LGPL)"
 Invoke-WebRequest "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n9.0-latest-win64-lgpl-9.0.zip" -OutFile "$Tmp\ffmpeg.zip"

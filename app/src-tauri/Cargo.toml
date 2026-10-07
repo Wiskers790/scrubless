@@ -1,6 +1,6 @@
 [package]
 name = "scrubless"
-version = "0.1.0"
+version = "0.1.1"
 description = "Search your footage, photos and sounds by describing them. Offline."
 authors = ["Scrubless contributors"]
 edition = "2021"

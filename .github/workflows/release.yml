@@ -1,5 +1,9 @@
-# Builds installers for Windows, macOS (Apple Silicon + Intel) and Linux and attaches them to a
-# draft GitHub release. Run it manually (Actions → release → Run workflow) or push a v* tag.
+# Builds Scrubless for Windows, macOS (Apple Silicon + Intel) and Linux on every v* tag and attaches
+# them to a draft GitHub release, under fixed names so the README can link to
+# releases/latest/download/<name>:
+#   Scrubless-Windows-Setup.exe     Scrubless-Windows-Portable.zip
+#   Scrubless-macOS-AppleSilicon.dmg  Scrubless-macOS-Intel.dmg
+#   Scrubless-Linux.AppImage
 # Not yet signed: macOS needs an Apple Developer ID + notarization, Windows an Authenticode cert.
 name: release
 on:
@@ -13,10 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-22.04, engines: linux-x64, args: "" }
-          - { os: macos-14, engines: macos-arm64, args: "--target aarch64-apple-darwin" }
-          - { os: macos-13, engines: macos-x64, args: "--target x86_64-apple-darwin" }
-          - { os: windows-latest, engines: windows-x64, args: "" }
+          - { os: ubuntu-22.04, engines: linux-x64, target: "", args: "--bundles appimage,deb" }
+          - { os: macos-14, engines: macos-arm64, target: aarch64-apple-darwin, args: "--target aarch64-apple-darwin" }
+          - { os: macos-15-intel, engines: macos-x64, target: x86_64-apple-darwin, args: "--target x86_64-apple-darwin" }
+          - { os: windows-latest, engines: windows-x64, target: "", args: "" }
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -30,6 +34,8 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -39,11 +45,11 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
-            libvulkan-dev glslc spirv-headers xz-utils
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xz-utils
 
-      - name: Vulkan SDK (Windows, for whisper.cpp)
-        if: runner.os == 'Windows'
+      # glslc + the Vulkan loader for whisper.cpp's Vulkan backend (Linux and Windows)
+      - name: Vulkan SDK
+        if: runner.os != 'macOS'
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
@@ -68,6 +74,35 @@ jobs:
           projectPath: app
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
           releaseName: Scrubless v__VERSION__
+          releaseBody: See the README for download links and setup.
           releaseDraft: true
-          prerelease: true
+          prerelease: false
           args: ${{ matrix.args }}
+
+      # Friendly, version-free names (and a no-install Windows folder) for the README links.
+      - name: Easy downloads
+        if: github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd app/src-tauri
+          REL="target/${{ matrix.target }}/release"; [ -z "${{ matrix.target }}" ] && REL="target/release"
+          mkdir -p dist
+          case "${{ matrix.engines }}" in
+            windows-x64)
+              cp "$REL"/bundle/nsis/*-setup.exe dist/Scrubless-Windows-Setup.exe
+              mkdir -p portable/Scrubless
+              cp "$REL/scrubless.exe" portable/Scrubless/Scrubless.exe
+              cp -r engines portable/Scrubless/engines
+              printf 'Double-click Scrubless.exe to start.\r\nSearch models (~1.4 GB) download on first launch.\r\nNeeds Windows 10/11 64-bit (WebView2, included with Windows 11).\r\n' > portable/Scrubless/README.txt
+              (cd portable && 7z a -tzip -mx=5 ../dist/Scrubless-Windows-Portable.zip Scrubless > /dev/null) ;;
+            linux-x64)
+              cp "$REL"/bundle/appimage/*.AppImage dist/Scrubless-Linux.AppImage
+              cp "$REL"/bundle/deb/*.deb dist/Scrubless-Linux.deb ;;
+            macos-arm64) cp "$REL"/bundle/dmg/*.dmg dist/Scrubless-macOS-AppleSilicon.dmg ;;
+            macos-x64)   cp "$REL"/bundle/dmg/*.dmg dist/Scrubless-macOS-Intel.dmg ;;
+          esac
+          ls -la dist
+          gh release upload "${{ github.ref_name }}" dist/* --clobber --repo "${{ github.repository }}"
