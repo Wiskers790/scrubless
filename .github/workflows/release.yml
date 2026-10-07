@@ -1,0 +1,73 @@
+# Builds installers for Windows, macOS (Apple Silicon + Intel) and Linux and attaches them to a
+# draft GitHub release. Run it manually (Actions → release → Run workflow) or push a v* tag.
+# Not yet signed: macOS needs an Apple Developer ID + notarization, Windows an Authenticode cert.
+name: release
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, engines: linux-x64, args: "" }
+          - { os: macos-14, engines: macos-arm64, args: "--target aarch64-apple-darwin" }
+          - { os: macos-13, engines: macos-x64, args: "--target x86_64-apple-darwin" }
+          - { os: windows-latest, engines: windows-x64, args: "" }
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            libvulkan-dev glslc spirv-headers xz-utils
+
+      - name: Vulkan SDK (Windows, for whisper.cpp)
+        if: runner.os == 'Windows'
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
+
+      - name: Engines (llama.cpp, whisper.cpp, ffmpeg)
+        if: runner.os != 'Windows'
+        run: app/scripts/fetch-engines.sh ${{ matrix.engines }}
+
+      - name: Engines (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: app/scripts/fetch-engines.ps1
+
+      - run: npm ci
+        working-directory: app
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'v__VERSION__' }}
+          releaseName: Scrubless v__VERSION__
+          releaseDraft: true
+          prerelease: true
+          args: ${{ matrix.args }}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b1830"/><stop offset="1" stop-color="#0c0d10"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c3b8ff"/><stop offset="1" stop-color="#7b6bf0"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="none" stroke="#ffffff14" stroke-width="6"/>
+  <!-- film frame inside the lens -->
+  <rect x="300" y="352" width="248" height="164" rx="22" fill="#9b8cff33"/>
+  <path d="M322 380h28M322 434h28M322 488h28M498 380h28M498 434h28M498 488h28" stroke="#9b8cff" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="424" cy="434" r="214" fill="none" stroke="url(#ring)" stroke-width="64"/>
+  <path d="M584 594 784 794" stroke="url(#ring)" stroke-width="84" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+node_modules/
+app/build/
+app/.svelte-kit/
+app/src-tauri/target/
+app/src-tauri/engines/
+app/src-tauri/gen/schemas/
+__pycache__/
+*.pyc
+eval-data/

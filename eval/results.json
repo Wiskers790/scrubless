@@ -1,0 +1,134 @@
+{
+ "msrvtt": {
+  "max (app)": {
+   "n": 1000,
+   "R@1": 39.4,
+   "R@5": 63.5,
+   "R@10": 73.4,
+   "MdR": 3.0
+  },
+  "mean top-2": {
+   "n": 1000,
+   "R@1": 36.3,
+   "R@5": 61.5,
+   "R@10": 73.0,
+   "MdR": 3.0
+  },
+  "mean top-3": {
+   "n": 1000,
+   "R@1": 35.1,
+   "R@5": 61.4,
+   "R@10": 71.1,
+   "MdR": 3.0
+  },
+  "mean all": {
+   "n": 1000,
+   "R@1": 34.1,
+   "R@5": 59.3,
+   "R@10": 70.8,
+   "MdR": 3.0
+  },
+  "softmax-pool": {
+   "n": 1000,
+   "R@1": 39.0,
+   "R@5": 64.0,
+   "R@10": 73.9,
+   "MdR": 2.0
+  },
+  "frames_per_clip": {
+   "mean": 3.2,
+   "max": 11
+  },
+  "app end-to-end (150 sample)": {
+   "n": 150,
+   "R@1": 44.7,
+   "R@5": 64.7,
+   "R@10": 73.3,
+   "MdR": 2.0
+  }
+ },
+ "fleurs": {
+  "transcription": {
+   "en_us": {
+    "metric": "WER",
+    "error_%": 5.8,
+    "files": 116,
+    "untranscribed": 0
+   },
+   "es_419": {
+    "metric": "WER",
+    "error_%": 7.2,
+    "files": 116,
+    "untranscribed": 0
+   },
+   "ja_jp": {
+    "metric": "CER",
+    "error_%": 4.0,
+    "files": 116,
+    "untranscribed": 0
+   },
+   "hi_in": {
+    "metric": "WER",
+    "error_%": 19.3,
+    "files": 116,
+    "untranscribed": 0
+   }
+  },
+  "exact_phrase": {
+   "en_us": {
+    "queries": 60,
+    "exact_found_%": 63.3,
+    "exact_top1_%": 63.3,
+    "said_top1_%": 98.3
+   },
+   "es_419": {
+    "queries": 60,
+    "exact_found_%": 65.0,
+    "exact_top1_%": 65.0,
+    "said_top1_%": 93.3
+   },
+   "ja_jp": {
+    "queries": 60,
+    "exact_found_%": 71.7,
+    "exact_top1_%": 71.7,
+    "said_top1_%": 81.7
+   },
+   "hi_in": {
+    "queries": 60,
+    "exact_found_%": 31.7,
+    "exact_top1_%": 31.7,
+    "said_top1_%": 71.7
+   }
+  },
+  "cross_language": {
+   "en query -> es_419 speech": {
+    "n": 116,
+    "R@1": 99.1,
+    "R@5": 100.0,
+    "R@10": 100.0,
+    "MdR": 1.0
+   },
+   "en query -> ja_jp speech": {
+    "n": 116,
+    "R@1": 99.1,
+    "R@5": 100.0,
+    "R@10": 100.0,
+    "MdR": 1.0
+   },
+   "en query -> hi_in speech": {
+    "n": 116,
+    "R@1": 94.0,
+    "R@5": 97.4,
+    "R@10": 99.1,
+    "MdR": 1.0
+   },
+   "en query -> en_us speech": {
+    "n": 116,
+    "R@1": 100.0,
+    "R@5": 100.0,
+    "R@10": 100.0,
+    "MdR": 1.0
+   }
+  }
+ }
+}
