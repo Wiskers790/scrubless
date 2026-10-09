@@ -4,6 +4,8 @@ Search your footage, photos and sounds by describing them, fully offline. A free
 AI footage-search tools like Jumper, aimed at YouTubers and editors on DaVinci Resolve (free),
 CapCut, Final Cut and Premiere.
 
+![Scrubless: describe a shot, find a quote, search across languages, send selects to your editor](docs/demo.gif)
+
 - **Visual search:** describe a shot in any language ("drone shot over a beach at sunset",
   「猫が窓辺で寝ている」) and get the exact moment, with source timecode.
 - **Speech search:** every word is transcribed locally (Whisper, 99 languages). Find exact quotes
