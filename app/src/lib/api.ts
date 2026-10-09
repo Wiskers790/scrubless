@@ -166,15 +166,23 @@ export function bytes(n: number): string {
   return `${(n / 1e9).toFixed(2)} GB`;
 }
 
-/** Split `text` into plain and marked parts: every case-insensitive occurrence of the query
- *  (whole phrase, or words of 2+ characters) is marked. */
+const STOP = new Set(["the", "and", "for", "with", "from", "that", "this", "are", "was", "were", "has", "had", "his", "her", "they", "their", "she", "you", "its", "into", "who", "how", "what"]);
+const NO_SPACES = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u;
+
+/** Split `text` into plain and marked parts: case-insensitive occurrences of the query (whole
+ *  phrase, or words of 3+ characters that aren't filler) are marked. Matches must be whole words,
+ *  so "on" never lights up inside "abatieron"; scripts written without spaces match anywhere. */
 export function highlight(text: string, q: string): { t: string; m: boolean }[] {
-  const terms = [q.trim(), ...q.trim().split(/\s+/)].filter((w) => w.length >= 2);
+  const words = q.trim().split(/\s+/).filter((w) => w.length >= 3 && !STOP.has(w.toLowerCase()));
+  const terms = [...new Set([q.trim(), ...words])].filter((w) => w.length >= 2).sort((a, b) => b.length - a.length);
   if (!terms.length) return [{ t: text, m: false }];
-  const esc = [...new Set(terms)].sort((a, b) => b.length - a.length).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const alts = terms.map((w) => {
+    const e = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return NO_SPACES.test(w) ? e : `(?<![\\p{L}\\p{N}])${e}(?![\\p{L}\\p{N}])`;
+  });
   // with one capturing group, split() puts the matches at the odd indexes
   return text
-    .split(new RegExp(`(${esc.join("|")})`, "i" + "g"))
+    .split(new RegExp(`(${alts.join("|")})`, "giu"))
     .map((t, i) => ({ t, m: i % 2 === 1 }))
     .filter((p) => p.t);
 }
