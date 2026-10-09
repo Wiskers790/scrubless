@@ -18,9 +18,6 @@ Measured quality, including where it is weak, is in [eval/RESULTS.md](eval/RESUL
 
 ## Download
 
-> **First public release: week of October 13.** Watch or star the repo to get notified. The links below go live then.
-> Meanwhile, the [benchmark results](eval/RESULTS.md) show exactly how well it works, and where it doesn't.
-
 | Your computer | Download | |
 |---|---|---|
 | **Windows 10/11** | [**Scrubless-Windows-Setup.exe**](https://github.com/Wiskers790/scrubless/releases/latest/download/Scrubless-Windows-Setup.exe) | Installer (recommended) |
